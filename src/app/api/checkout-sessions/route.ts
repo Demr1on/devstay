@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { formatAmountForStripe } from '@/lib/stripe';
+import { checkAvailability, findOrCreateCustomer, createBooking } from '@/lib/db/queries';
 
 // Überprüfung der Stripe-Konfiguration
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY || process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY;
@@ -48,6 +49,75 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: 'E-Mail-Adresse ist erforderlich' },
         { status: 400 }
+      );
+    }
+
+    if (!checkIn || !checkOut) {
+      return NextResponse.json(
+        { error: 'Anreise- und Abreisedatum sind erforderlich' },
+        { status: 400 }
+      );
+    }
+
+    // Verfügbarkeit prüfen
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+    
+    try {
+      const availability = await checkAvailability(checkInDate, checkOutDate);
+      
+      if (!availability.available) {
+        return NextResponse.json(
+          { 
+            error: 'Das Apartment ist für die gewählten Termine nicht verfügbar',
+            details: 'Bitte wählen Sie andere Termine'
+          },
+          { status: 409 }
+        );
+      }
+    } catch (error) {
+      console.error('Verfügbarkeitsprüfung fehlgeschlagen:', error);
+      return NextResponse.json(
+        { error: 'Verfügbarkeitsprüfung fehlgeschlagen. Bitte versuchen Sie es erneut.' },
+        { status: 500 }
+      );
+    }
+
+    // Kunde erstellen/finden und Buchung vorbereiten
+    try {
+      const customer = await findOrCreateCustomer({
+        firstName: customerDetails.firstName,
+        lastName: customerDetails.lastName,
+        email: customerDetails.email,
+        phone: customerDetails.phone,
+        company: customerDetails.company || null,
+      });
+
+      // Nächte berechnen
+      const totalNights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Buchung erstellen (wird später durch Webhook bestätigt)
+      const newBooking = await createBooking({
+        customerId: customer.id,
+        stripeSessionId: '', // Wird nach Stripe-Session-Erstellung aktualisiert
+        checkIn: checkInDate,
+        checkOut: checkOutDate,
+        totalNights,
+        basePrice: (amount * 1.1).toString(), // Basis ohne Rabatt
+        totalPrice: amount.toString(),
+        specialRequests: customerDetails.specialRequests || null,
+        status: 'pending',
+        paymentStatus: 'pending',
+      });
+
+      // Session ID in Metadata für Webhook
+      body.bookingId = newBooking.id;
+      
+    } catch (error) {
+      console.error('Buchungsvorbereitung fehlgeschlagen:', error);
+      return NextResponse.json(
+        { error: 'Buchung konnte nicht vorbereitet werden. Bitte versuchen Sie es erneut.' },
+        { status: 500 }
       );
     }
 
