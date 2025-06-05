@@ -129,23 +129,45 @@ export default function BookingPage() {
 
     try {
       // Stripe Checkout Session erstellen
-      const checkoutSession = await fetchPostJSON('/api/checkout-sessions', {
-        amount: bookingPrice.finalPrice,
-        currency: 'eur',
-        checkIn: formData.checkIn,
-        checkOut: formData.checkOut,
-        customerDetails: {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone,
-          company: formData.company,
-          specialRequests: formData.specialRequests,
+      const response = await fetch('/api/checkout-sessions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          amount: bookingPrice.finalPrice,
+          currency: 'eur',
+          checkIn: formData.checkIn,
+          checkOut: formData.checkOut,
+          customerDetails: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            phone: formData.phone,
+            company: formData.company,
+            specialRequests: formData.specialRequests,
+          },
+        }),
       });
 
-      if ((checkoutSession as any).statusCode === 500) {
-        console.error((checkoutSession as any).message);
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('Checkout Session Error:', data);
+        
+        if (response.status === 409) {
+          alert(`Das Apartment ist für die gewählten Termine nicht verfügbar.\n\n${data.details || 'Bitte wählen Sie andere Termine.'}`);
+        } else if (response.status === 500) {
+          alert('Server-Fehler: ' + (data.error || 'Bitte versuchen Sie es später erneut.'));
+        } else {
+          alert(data.error || 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
+        }
+        return;
+      }
+
+      // Überprüfen ob Session-ID vorhanden ist
+      if (!data.id) {
+        console.error('Keine Session-ID erhalten:', data);
         alert('Fehler beim Erstellen der Checkout Session. Bitte versuchen Sie es erneut.');
         return;
       }
@@ -153,7 +175,7 @@ export default function BookingPage() {
       // Zu Stripe Checkout weiterleiten
       const stripe = await getStripe();
       const { error } = await stripe!.redirectToCheckout({
-        sessionId: checkoutSession.id,
+        sessionId: data.id,
       });
 
       if (error) {
@@ -162,7 +184,7 @@ export default function BookingPage() {
       }
     } catch (error) {
       console.error('Booking Error:', error);
-      alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
+      alert('Netzwerk-Fehler: Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.');
     }
   };
 
