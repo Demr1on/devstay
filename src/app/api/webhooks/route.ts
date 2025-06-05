@@ -19,26 +19,49 @@ const stripe = new Stripe(stripeSecretKey || 'sk_test_dummy_key_for_build', {
 const webhookSecret: string = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(req: NextRequest) {
+  console.log('🔔 Webhook aufgerufen:', new Date().toISOString());
+  
   // Runtime-Überprüfung der Stripe-Konfiguration
   if (!stripeSecretKey || stripeSecretKey === 'sk_test_dummy_key_for_build') {
+    console.error('❌ Stripe Secret Key nicht verfügbar');
     return NextResponse.json(
       { error: 'Webhook service nicht verfügbar' },
       { status: 503 }
     );
   }
 
-  const sig = req.headers.get('stripe-signature')!;
+  if (!webhookSecret) {
+    console.error('❌ Webhook Secret nicht verfügbar');
+    return NextResponse.json(
+      { error: 'Webhook Secret nicht konfiguriert' },
+      { status: 503 }
+    );
+  }
+
+  const sig = req.headers.get('stripe-signature');
+  console.log('🔐 Stripe Signature vorhanden:', !!sig);
+  
+  if (!sig) {
+    console.error('❌ Keine Stripe-Signatur gefunden');
+    return NextResponse.json(
+      { error: 'Keine Stripe-Signatur' },
+      { status: 400 }
+    );
+  }
 
   let event: Stripe.Event;
 
   try {
     // Den rohen Body für Stripe lesen
     const body = await req.text();
+    console.log('📦 Body Länge:', body.length);
     
     // Event konstruieren und Signatur verifizieren
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
+    console.log('✅ Webhook-Event erfolgreich verifiziert:', event.type, event.id);
   } catch (err) {
-    console.log(`❌ Webhook-Signatur-Fehler: ${err instanceof Error ? err.message : err}`);
+    console.error(`❌ Webhook-Signatur-Fehler: ${err instanceof Error ? err.message : err}`);
+    console.error('🔧 Webhook Secret (erste 10 Zeichen):', webhookSecret?.substring(0, 10));
     return NextResponse.json(
       { error: 'Webhook-Signatur-Verification fehlgeschlagen' },
       { status: 400 }
