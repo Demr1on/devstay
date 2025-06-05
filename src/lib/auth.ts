@@ -7,7 +7,7 @@ const getAdminEmails = (): string[] => {
   const adminEmails = process.env.ADMIN_EMAILS;
   if (!adminEmails) {
     console.warn('⚠️ ADMIN_EMAILS environment variable not set, using defaults');
-    return ['daniel@devstay.de', 'info@devstay.de'];
+    return ['dewalddaniel1@gmail.com']; // Fallback zu deiner E-Mail
   }
   return adminEmails.split(',').map(email => email.trim());
 };
@@ -23,6 +23,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async signIn({ user }) {
+      console.log('🔍 SignIn attempt:', user.email);
+      console.log('📋 Allowed emails:', ADMIN_EMAILS);
+      
       // Nur erlaubte Admin-E-Mails dürfen sich anmelden
       if (!user.email || !ADMIN_EMAILS.includes(user.email)) {
         console.log('❌ Nicht autorisierter Login-Versuch:', user.email);
@@ -36,6 +39,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // User-Daten beim ersten Login zum Token hinzufügen
       if (user && user.email) {
         token.isAdmin = ADMIN_EMAILS.includes(user.email);
+        console.log('🎫 JWT Token created for:', user.email);
       }
       return token;
     },
@@ -43,6 +47,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // Admin-Status zur Session hinzufügen
       if (session.user?.email && ADMIN_EMAILS.includes(session.user.email)) {
         (session as any).user.isAdmin = true;
+        console.log('👤 Session created for admin:', session.user.email);
       }
       return session;
     },
@@ -51,6 +56,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: '/admin/signin',
     error: '/admin/error',
   },
+  debug: process.env.NODE_ENV === 'development',
+  secret: process.env.NEXTAUTH_SECRET,
 })
 
 // Middleware-Helper für Admin-Schutz
