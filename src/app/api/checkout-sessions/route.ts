@@ -2,13 +2,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { formatAmountForStripe } from '@/lib/stripe';
 
-// Stripe-Instanz erstellen
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+// Überprüfung der Stripe-Konfiguration
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY || process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY;
+
+if (!stripeSecretKey) {
+  console.error('STRIPE_SECRET_KEY ist nicht gesetzt in den Umgebungsvariablen');
+}
+
+// Stripe-Instanz erstellen (mit Fallback für Build-Zeit)
+const stripe = new Stripe(stripeSecretKey || 'sk_test_dummy_key_for_build', {
   apiVersion: '2025-05-28.basil',
 });
 
 export async function POST(req: NextRequest) {
   try {
+    // Runtime-Überprüfung der Stripe-Konfiguration
+    if (!stripeSecretKey || stripeSecretKey === 'sk_test_dummy_key_for_build') {
+      return NextResponse.json(
+        { 
+          error: 'Service temporär nicht verfügbar',
+          details: 'Stripe-Konfiguration fehlt. Bitte kontaktieren Sie den Support.'
+        },
+        { status: 503 }
+      );
+    }
+
     const body = await req.json();
     const { 
       amount, 

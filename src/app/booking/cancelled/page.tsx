@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -10,7 +10,7 @@ import {
   QuestionMarkCircleIcon
 } from '@heroicons/react/24/outline';
 
-export default function BookingCancelledPage() {
+function CancelledContent() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const searchParams = useSearchParams();
 
@@ -156,5 +156,22 @@ export default function BookingCancelledPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BookingCancelledPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-24 h-24 mx-auto bg-red-100 rounded-full flex items-center justify-center mb-4">
+            <XCircleIcon className="w-12 h-12 text-red-600" />
+          </div>
+          <p className="text-lg text-gray-600">Seite wird geladen...</p>
+        </div>
+      </div>
+    }>
+      <CancelledContent />
+    </Suspense>
   );
 } 
