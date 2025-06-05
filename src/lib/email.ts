@@ -152,6 +152,8 @@ export async function sendBookingConfirmation(bookingData: BookingEmailData) {
     const { data, error } = await resend.emails.send({
       from: 'DevStay <noreply@devstay.de>',
       to: [customerEmail],
+      // Kundenantworten gehen an echte E-Mail-Adresse
+      replyTo: 'info@devstay.de',
       subject: `✅ Buchungsbestätigung - ${checkInDate} bis ${checkOutDate}`,
       html: emailHtml,
     });
@@ -265,6 +267,102 @@ export async function sendCheckinInstructions(bookingData: BookingEmailData & { 
 
   } catch (error) {
     console.error('Check-in E-Mail-Fehler:', error);
+    throw error;
+  }
+}
+
+// Admin-Benachrichtigung bei Kundenanfragen
+export async function notifyAdminCustomerInquiry(customerData: {
+  customerName: string;
+  customerEmail: string;
+  bookingId?: string;
+  subject: string;
+  message: string;
+  urgency?: 'low' | 'medium' | 'high';
+}) {
+  const { customerName, customerEmail, bookingId, subject, message, urgency = 'medium' } = customerData;
+  
+  const urgencyColors = {
+    low: '#059669',
+    medium: '#d97706', 
+    high: '#dc2626'
+  };
+
+  const urgencyEmojis = {
+    low: '📧',
+    medium: '⚠️',
+    high: '🚨'
+  };
+
+  const adminEmailHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Kundenanfrage - DevStay</title>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: ${urgencyColors[urgency]}; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #f8fafc; padding: 20px; border-radius: 0 0 8px 8px; }
+        .customer-message { background: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid ${urgencyColors[urgency]}; }
+        .customer-info { background: #e5e7eb; padding: 15px; border-radius: 8px; margin: 15px 0; }
+        .quick-actions { display: flex; gap: 10px; margin: 20px 0; }
+        .action-btn { background: #2563eb; color: white; padding: 10px 15px; text-decoration: none; border-radius: 6px; display: inline-block; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>${urgencyEmojis[urgency]} Neue Kundenanfrage</h1>
+        <p>Priorität: ${urgency.toUpperCase()}</p>
+      </div>
+      
+      <div class="content">
+        <div class="customer-info">
+          <h3>👤 Kundendaten</h3>
+          <p><strong>Name:</strong> ${customerName}</p>
+          <p><strong>E-Mail:</strong> <a href="mailto:${customerEmail}">${customerEmail}</a></p>
+          ${bookingId ? `<p><strong>Buchung:</strong> ${bookingId}</p>` : ''}
+          <p><strong>Betreff:</strong> ${subject}</p>
+        </div>
+        
+        <div class="customer-message">
+          <h3>💬 Nachricht</h3>
+          <p style="white-space: pre-wrap;">${message}</p>
+        </div>
+        
+        <div class="quick-actions">
+          <a href="mailto:${customerEmail}?subject=Re: ${subject}" class="action-btn">
+            📧 Antworten
+          </a>
+          <a href="https://wa.me/4917641847930" class="action-btn">
+            📱 WhatsApp öffnen
+          </a>
+        </div>
+        
+        <p><small>Diese E-Mail wurde automatisch generiert. Bitte antworten Sie direkt an den Kunden.</small></p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: 'DevStay System <noreply@devstay.de>',
+      to: ['info@devstay.de'],
+      subject: `${urgencyEmojis[urgency]} Kundenanfrage: ${subject}`,
+      html: adminEmailHtml,
+      replyTo: customerEmail,
+    });
+
+    if (error) {
+      throw new Error(`Admin-Benachrichtigung fehlgeschlagen: ${error.message}`);
+    }
+
+    console.log('✅ Admin über Kundenanfrage benachrichtigt:', data?.id);
+    return { success: true, messageId: data?.id };
+
+  } catch (error) {
+    console.error('❌ Admin-Benachrichtigung fehlgeschlagen:', error);
     throw error;
   }
 } 
