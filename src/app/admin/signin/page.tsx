@@ -1,10 +1,10 @@
 'use client';
 
 import { signIn, getProviders } from 'next-auth/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-export default function AdminSignIn() {
+function SignInContent() {
   const [providers, setProviders] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
@@ -101,5 +101,20 @@ export default function AdminSignIn() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminSignIn() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Lade Anmeldeseite...</p>
+        </div>
+      </div>
+    }>
+      <SignInContent />
+    </Suspense>
   );
 } 

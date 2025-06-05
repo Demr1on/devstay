@@ -1,7 +1,5 @@
 import NextAuth from "next-auth"
 import GitHub from "next-auth/providers/github"
-import { DrizzleAdapter } from "@auth/drizzle-adapter"
-import { db } from "@/lib/db"
 import crypto from 'crypto';
 
 // Erlaubte Admin E-Mail-Adressen
@@ -12,7 +10,6 @@ const ADMIN_EMAILS = [
 ];
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: DrizzleAdapter(db),
   providers: [
     GitHub({
       clientId: process.env.AUTH_GITHUB_ID!,
@@ -20,7 +17,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     })
   ],
   callbacks: {
-    async signIn({ user, profile }) {
+    async signIn({ user }) {
       // Nur erlaubte Admin-E-Mails dürfen sich anmelden
       if (!user.email || !ADMIN_EMAILS.includes(user.email)) {
         console.log('❌ Nicht autorisierter Login-Versuch:', user.email);
@@ -30,7 +27,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       console.log('✅ Admin angemeldet:', user.email);
       return true;
     },
-    async session({ session, user }) {
+    async jwt({ token, user }) {
+      // User-Daten beim ersten Login zum Token hinzufügen
+      if (user && user.email) {
+        token.isAdmin = ADMIN_EMAILS.includes(user.email);
+      }
+      return token;
+    },
+    async session({ session, token }) {
       // Admin-Status zur Session hinzufügen
       if (session.user?.email && ADMIN_EMAILS.includes(session.user.email)) {
         (session as any).user.isAdmin = true;
@@ -41,7 +45,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: '/admin/signin',
     error: '/admin/error',
-  }
+  },
 })
 
 // Middleware-Helper für Admin-Schutz

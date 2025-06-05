@@ -2,8 +2,9 @@
 
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { Suspense } from 'react';
 
-export default function AdminError() {
+function ErrorContent() {
   const searchParams = useSearchParams();
   const error = searchParams?.get('error');
 
@@ -92,5 +93,20 @@ export default function AdminError() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminError() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Lade Fehlerseite...</p>
+        </div>
+      </div>
+    }>
+      <ErrorContent />
+    </Suspense>
   );
 } 
