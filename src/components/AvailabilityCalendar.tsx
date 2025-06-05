@@ -86,7 +86,7 @@ export default function AvailabilityCalendar({
   const isDateOccupied = (date: Date): { occupied: boolean; type?: string; reason?: string } => {
     if (!calendarData) return { occupied: false };
 
-    // Prüfe Buchungen
+    // Prüfe Buchungen (sowohl confirmed als auch pending werden als "belegt" angezeigt)
     for (const booking of calendarData.bookings) {
       const checkIn = new Date(booking.checkIn);
       const checkOut = new Date(booking.checkOut);
@@ -94,13 +94,13 @@ export default function AvailabilityCalendar({
       if (date >= checkIn && date < checkOut) {
         return {
           occupied: true,
-          type: booking.status === 'confirmed' ? 'confirmed' : 'pending',
-          reason: `Buchung (${booking.status})`
+          type: 'booked',
+          reason: 'Belegt'
         };
       }
     }
 
-    // Prüfe blockierte Termine
+    // Blockierte Termine werden als "belegt" angezeigt (für Endnutzer nicht sichtbar)
     for (const blocked of calendarData.blockedDates) {
       const startDate = new Date(blocked.startDate);
       const endDate = new Date(blocked.endDate);
@@ -108,8 +108,8 @@ export default function AvailabilityCalendar({
       if (date >= startDate && date <= endDate) {
         return {
           occupied: true,
-          type: 'blocked',
-          reason: blocked.reason
+          type: 'booked',
+          reason: 'Belegt'
         };
       }
     }
@@ -124,17 +124,20 @@ export default function AvailabilityCalendar({
     const occupation = isDateOccupied(date);
     if (occupation.occupied || isBefore(date, startOfDay(new Date()))) return;
 
+    // Exakte Kopie des angeklickten Datums erstellen um Timezone-Probleme zu vermeiden
+    const selectedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
     if (!isSelecting || !selectedStartDate) {
       // Neue Auswahl starten
-      onDateSelect(date, null);
+      onDateSelect(selectedDate, null);
       setIsSelecting(true);
       setTempEndDate(null);
     } else {
       // Auswahl beenden
-      if (date > selectedStartDate) {
-        onDateSelect(selectedStartDate, date);
+      if (selectedDate > selectedStartDate) {
+        onDateSelect(selectedStartDate, selectedDate);
       } else {
-        onDateSelect(date, selectedStartDate);
+        onDateSelect(selectedDate, selectedStartDate);
       }
       setIsSelecting(false);
       setTempEndDate(null);
@@ -153,17 +156,8 @@ export default function AvailabilityCalendar({
     if (isPast) {
       classes += " text-gray-300 cursor-not-allowed";
     } else if (occupation.occupied) {
-      switch (occupation.type) {
-        case 'confirmed':
-          classes += " bg-red-500 text-white cursor-not-allowed";
-          break;
-        case 'pending':
-          classes += " bg-orange-400 text-white cursor-not-allowed";
-          break;
-        case 'blocked':
-          classes += " bg-gray-500 text-white cursor-not-allowed";
-          break;
-      }
+      // Alle belegten Termine einheitlich rot darstellen
+      classes += " bg-red-500 text-white cursor-not-allowed";
     } else {
       classes += " bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer";
       
@@ -227,41 +221,7 @@ export default function AvailabilityCalendar({
         </div>
       </div>
 
-      {/* Statistiken */}
-      {calendarData && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-green-50 p-3 rounded-lg text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {calendarData.statistics.confirmedBookings}
-            </div>
-            <div className="text-sm text-green-700">Bestätigt</div>
-          </div>
-          <div className="bg-orange-50 p-3 rounded-lg text-center">
-            <div className="text-2xl font-bold text-orange-600">
-              {calendarData.statistics.pendingBookings}
-            </div>
-            <div className="text-sm text-orange-700">Ausstehend</div>
-          </div>
-          <div className="bg-gray-50 p-3 rounded-lg text-center">
-            <div className="text-2xl font-bold text-gray-600">
-              {calendarData.statistics.blockedPeriods}
-            </div>
-            <div className="text-sm text-gray-700">Blockiert</div>
-          </div>
-          <div className="bg-blue-50 p-3 rounded-lg text-center">
-            <div className="text-2xl font-bold text-blue-600">
-              {calendarData.statistics.totalRevenue.toFixed(0)}€
-            </div>
-            <div className="text-sm text-blue-700">Umsatz</div>
-          </div>
-          <div className="bg-purple-50 p-3 rounded-lg text-center">
-            <div className="text-2xl font-bold text-purple-600">
-              {Math.round((calendarData.statistics.confirmedBookings / daysInMonth.length) * 100)}%
-            </div>
-            <div className="text-sm text-purple-700">Auslastung</div>
-          </div>
-        </div>
-      )}
+
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
@@ -297,39 +257,20 @@ export default function AvailabilityCalendar({
                   >
                     {format(date, 'd')}
                   </button>
-                  
-                  {/* Indikator für Buchungstyp */}
-                  {occupation.occupied && (
-                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
-                      <div className={`w-2 h-2 rounded-full ${
-                        occupation.type === 'confirmed' ? 'bg-red-600' :
-                        occupation.type === 'pending' ? 'bg-orange-500' :
-                        'bg-gray-600'
-                      }`} />
-                    </div>
-                  )}
                 </div>
               );
             })}
           </div>
 
-          {/* Legende */}
-          <div className="mt-6 flex flex-wrap gap-4 justify-center">
+          {/* Vereinfachte Legende */}
+          <div className="mt-6 flex flex-wrap gap-6 justify-center">
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 bg-green-100 rounded border"></div>
               <span className="text-sm text-gray-700">Verfügbar</span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 bg-red-500 rounded"></div>
-              <span className="text-sm text-gray-700">Belegt (bestätigt)</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-orange-400 rounded"></div>
-              <span className="text-sm text-gray-700">Belegt (ausstehend)</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-gray-500 rounded"></div>
-              <span className="text-sm text-gray-700">Blockiert</span>
+              <span className="text-sm text-gray-700">Belegt</span>
             </div>
             {selectionMode && (
               <div className="flex items-center space-x-2">
