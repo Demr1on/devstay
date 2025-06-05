@@ -1,8 +1,9 @@
 import { pgTable, uuid, text, varchar, timestamp, decimal, integer, boolean, jsonb } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 // Kunden-Tabelle
 export const customers = pgTable('customers', {
-  id: uuid('id').primaryKey().default('gen_random_uuid()'),
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   firstName: varchar('first_name', { length: 100 }).notNull(),
   lastName: varchar('last_name', { length: 100 }).notNull(),
   email: varchar('email', { length: 255 }).notNull().unique(),
@@ -14,7 +15,7 @@ export const customers = pgTable('customers', {
 
 // Buchungen-Tabelle
 export const bookings = pgTable('bookings', {
-  id: uuid('id').primaryKey().default('gen_random_uuid()'),
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   customerId: uuid('customer_id').references(() => customers.id).notNull(),
   
   // Stripe-Informationen
@@ -57,7 +58,7 @@ export const bookings = pgTable('bookings', {
 
 // Blocked Dates - für Wartung, persönliche Nutzung etc.
 export const blockedDates = pgTable('blocked_dates', {
-  id: uuid('id').primaryKey().default('gen_random_uuid()'),
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   startDate: timestamp('start_date').notNull(),
   endDate: timestamp('end_date').notNull(),
   reason: varchar('reason', { length: 255 }).notNull(),
@@ -68,7 +69,7 @@ export const blockedDates = pgTable('blocked_dates', {
 
 // E-Mail Log - für Nachverfolgung gesendeter E-Mails
 export const emailLog = pgTable('email_log', {
-  id: uuid('id').primaryKey().default('gen_random_uuid()'),
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   bookingId: uuid('booking_id').references(() => bookings.id),
   customerId: uuid('customer_id').references(() => customers.id),
   emailType: varchar('email_type', { length: 100 }).notNull(), // confirmation, checkin_instructions, reminder

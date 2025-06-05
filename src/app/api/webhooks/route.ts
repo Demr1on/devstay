@@ -108,13 +108,12 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
     const [updatedBooking] = await db
       .update(bookings)
       .set({
-        stripeSessionId: session.id,
         stripePaymentIntentId: session.payment_intent as string,
         status: 'confirmed',
         paymentStatus: 'paid',
         updatedAt: new Date(),
       })
-      .where(eq(bookings.stripeSessionId, '')) // Findet die vorbereitete Buchung
+      .where(eq(bookings.stripeSessionId, session.id))
       .returning();
 
     if (!updatedBooking) {

@@ -96,10 +96,50 @@ export async function POST(req: NextRequest) {
       // Nächte berechnen
       const totalNights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
       
-      // Buchung erstellen (wird später durch Webhook bestätigt)
+      // Checkout Session erstellen
+      const checkoutSession = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        payment_method_types: ['card', 'sepa_debit'],
+        line_items: [
+          {
+            price_data: {
+              currency: currency,
+              product_data: {
+                name: 'DevStay - Apartment Buchung',
+                description: `Aufenthalt vom ${checkIn} bis ${checkOut}`,
+                images: ['https://devstay.de/images/apartment-hero.jpg'],
+              },
+              unit_amount: formatAmountForStripe(amount, currency),
+            },
+            quantity: 1,
+          },
+        ],
+        customer_creation: 'always',
+        customer_email: customerDetails.email,
+        metadata: {
+          checkIn,
+          checkOut,
+          customerName: `${customerDetails.firstName} ${customerDetails.lastName}`,
+          customerPhone: customerDetails.phone,
+          company: customerDetails.company || '',
+          specialRequests: customerDetails.specialRequests || '',
+        },
+        success_url: `${req.headers.get('origin')}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${req.headers.get('origin')}/booking/cancelled?session_id={CHECKOUT_SESSION_ID}`,
+        automatic_tax: {
+          enabled: false,
+        },
+        billing_address_collection: 'required',
+        phone_number_collection: {
+          enabled: true,
+        },
+        locale: 'de',
+      });
+
+      // Buchung erstellen mit Stripe Session ID
       const newBooking = await createBooking({
         customerId: customer.id,
-        stripeSessionId: '', // Wird nach Stripe-Session-Erstellung aktualisiert
+        stripeSessionId: checkoutSession.id,
         checkIn: checkInDate,
         checkOut: checkOutDate,
         totalNights,
@@ -110,8 +150,10 @@ export async function POST(req: NextRequest) {
         paymentStatus: 'pending',
       });
 
-      // Session ID in Metadata für Webhook
-      body.bookingId = newBooking.id;
+      return NextResponse.json({
+        id: checkoutSession.id,
+        url: checkoutSession.url,
+      });
       
     } catch (error) {
       console.error('Buchungsvorbereitung fehlgeschlagen:', error);
@@ -120,54 +162,6 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
-
-    // Checkout Session Parameter
-    const params: Stripe.Checkout.SessionCreateParams = {
-      mode: 'payment',
-      payment_method_types: ['card', 'sepa_debit'],
-      line_items: [
-        {
-          price_data: {
-            currency: currency,
-            product_data: {
-              name: 'DevStay - Apartment Buchung',
-              description: `Aufenthalt vom ${checkIn} bis ${checkOut}`,
-                              images: ['https://devstay.de/images/apartment-hero.jpg'],
-            },
-            unit_amount: formatAmountForStripe(amount, currency),
-          },
-          quantity: 1,
-        },
-      ],
-      customer_creation: 'always',
-      customer_email: customerDetails.email,
-      metadata: {
-        checkIn,
-        checkOut,
-        customerName: `${customerDetails.firstName} ${customerDetails.lastName}`,
-        customerPhone: customerDetails.phone,
-        company: customerDetails.company || '',
-        specialRequests: customerDetails.specialRequests || '',
-      },
-      success_url: `${req.headers.get('origin')}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get('origin')}/booking/cancelled?session_id={CHECKOUT_SESSION_ID}`,
-      automatic_tax: {
-        enabled: false,
-      },
-      billing_address_collection: 'required',
-      phone_number_collection: {
-        enabled: true,
-      },
-      locale: 'de',
-    };
-
-    // Checkout Session erstellen
-    const checkoutSession = await stripe.checkout.sessions.create(params);
-
-    return NextResponse.json({
-      id: checkoutSession.id,
-      url: checkoutSession.url,
-    });
 
   } catch (error) {
     console.error('Stripe Checkout Session Error:', error);
