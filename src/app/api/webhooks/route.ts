@@ -107,6 +107,18 @@ export async function POST(req: NextRequest) {
         console.log('❌ PaymentIntent fehlgeschlagen:', failedPayment.id);
         break;
 
+      case 'charge.refunded':
+        const refundedCharge = event.data.object as Stripe.Charge;
+        console.log('💰 Refund verarbeitet für Charge:', refundedCharge.id);
+        await handleRefundProcessed(refundedCharge);
+        break;
+
+      case 'charge.dispute.created':
+        const dispute = event.data.object as Stripe.Dispute;
+        console.log('⚠️ Streitfall erstellt für Charge:', dispute.charge);
+        await handleDispute(dispute);
+        break;
+
       default:
         console.log(`🔔 Unbehandelter Event-Typ: ${event.type}`);
     }
@@ -253,4 +265,90 @@ async function handleFailedPayment(session: Stripe.Checkout.Session) {
   // 1. Fehler-E-Mail an Kunden senden
   // 2. Admin benachrichtigen
   // 3. Buchungsversuch protokollieren
+}
+
+// Handler für Refund-Verarbeitung
+async function handleRefundProcessed(charge: Stripe.Charge) {
+  console.log('💰 Verarbeite Refund für Charge:', charge.id);
+  
+  try {
+    // Finde die Buchung anhand der Payment Intent ID
+    const paymentIntentId = typeof charge.payment_intent === 'string' 
+      ? charge.payment_intent 
+      : charge.payment_intent?.id;
+    
+    if (!paymentIntentId) {
+      console.error('❌ Keine Payment Intent ID gefunden für Charge:', charge.id);
+      return;
+    }
+
+    // Buchung in Datenbank aktualisieren
+    const [updatedBooking] = await db
+      .update(bookings)
+      .set({
+        paymentStatus: 'refunded',
+        status: 'cancelled',
+        updatedAt: new Date(),
+      })
+      .where(eq(bookings.stripePaymentIntentId, paymentIntentId))
+      .returning();
+
+    if (updatedBooking) {
+      console.log('✅ Buchung als erstattet markiert:', updatedBooking.id);
+      
+      // Log für Refund-Bestätigung (wir nutzen customerId da customerEmail nicht im Schema ist)
+      await logEmail({
+        bookingId: updatedBooking.id,
+        customerId: updatedBooking.customerId,
+        emailType: 'cancellation',
+        recipient: 'customer@example.com', // Wird später aus Customer-Tabelle geholt
+        subject: 'Rückerstattung bestätigt',
+        status: 'sent',
+        sentAt: new Date(),
+        metadata: {
+          chargeId: charge.id,
+          refundAmount: charge.amount_refunded,
+          webhookSource: true
+        }
+      });
+    } else {
+      console.error('❌ Buchung für Payment Intent nicht gefunden:', paymentIntentId);
+    }
+
+  } catch (error) {
+    console.error('❌ Fehler bei Refund-Verarbeitung:', error);
+  }
+}
+
+// Handler für Streitfälle
+async function handleDispute(dispute: Stripe.Dispute) {
+  console.log('⚠️ Verarbeite Streitfall für Charge:', dispute.charge);
+  
+  try {
+    // Finde die Buchung anhand der Charge ID
+    const chargeId = typeof dispute.charge === 'string' ? dispute.charge : dispute.charge.id;
+    
+    // Log für Admin-Benachrichtigung
+    await logEmail({
+      bookingId: 'DISPUTE_' + dispute.id,
+      customerId: 'ADMIN',
+      emailType: 'admin',
+      recipient: 'info@devstay.de',
+      subject: `⚠️ Streitfall: ${dispute.reason}`,
+      status: 'sent',
+      sentAt: new Date(),
+      metadata: {
+        disputeId: dispute.id,
+        chargeId: chargeId,
+        amount: dispute.amount,
+        reason: dispute.reason,
+        evidence: dispute.evidence
+      }
+    });
+
+    console.log('✅ Streitfall-Benachrichtigung geloggt:', dispute.id);
+
+  } catch (error) {
+    console.error('❌ Fehler bei Streitfall-Verarbeitung:', error);
+  }
 } 

@@ -131,26 +131,27 @@ export default function TermsPage() {
                 § 4 Stornierungsbedingungen
               </h2>
               
-              <div className="grid gap-4">
-                <div className="border rounded-lg p-4">
-                  <h4 className="font-semibold text-gray-900 mb-2">
-                    💚 Bis 48h vor Check-in
-                  </h4>
-                  <p className="text-sm text-gray-600">100% Erstattung</p>
-                </div>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+                <h3 className="font-semibold text-green-900 mb-3 text-xl">
+                  ✅ 100% Kostenlose Stornierung
+                </h3>
+                <p className="text-green-800 text-lg">
+                  <strong>Jederzeit bis kurz vor Check-in</strong>
+                </p>
+                <p className="text-green-700 text-sm mt-3">
+                  Volle Rückerstattung ohne Bearbeitungsgebühren.<br/>
+                  Wir verstehen, dass IT-Profis oft kurzfristige Terminänderungen haben.
+                </p>
                 
-                <div className="border rounded-lg p-4">
+                <div className="mt-4 p-4 bg-white rounded-lg">
                   <h4 className="font-semibold text-gray-900 mb-2">
-                    💛 24-48h vor Check-in
+                    ⚡ So funktioniert die Rückerstattung:
                   </h4>
-                  <p className="text-sm text-gray-600">50% Erstattung</p>
-                </div>
-                
-                <div className="border rounded-lg p-4">
-                  <h4 className="font-semibold text-gray-900 mb-2">
-                    ❤️ Weniger als 24h
-                  </h4>
-                  <p className="text-sm text-gray-600">Einzelfallprüfung</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• Automatische Stripe-Rückerstattung</li>
+                    <li>• Geld zurück auf Original-Zahlungsmethode</li>
+                    <li>• Bearbeitung innerhalb von 5-10 Werktagen</li>
+                  </ul>
                 </div>
               </div>
             </div>

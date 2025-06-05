@@ -97,6 +97,55 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Unique Selling Point Banner - 100% Free Cancellation */}
+      <section className="py-12 bg-gradient-to-r from-green-50 to-emerald-50 border-b-2 border-green-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500 text-white rounded-full mb-4">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold text-green-800 mb-3">
+              🚀 Einzige IT-Unterkunft mit 100% kostenlosen Last-Minute-Stornierungen!
+            </h2>
+            <p className="text-lg text-green-700 mb-6 max-w-2xl mx-auto">
+              Wir verstehen, dass IT-Profis oft kurzfristige Terminänderungen haben.
+              Deshalb bieten wir als einzige Unterkunft maximale Flexibilität.
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mb-6">
+              <div className="flex items-center justify-center text-green-600 bg-white rounded-lg p-3 shadow-sm">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm font-medium">Jederzeit stornierbar</span>
+              </div>
+              <div className="flex items-center justify-center text-green-600 bg-white rounded-lg p-3 shadow-sm">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm font-medium">Volle Rückerstattung</span>
+              </div>
+              <div className="flex items-center justify-center text-green-600 bg-white rounded-lg p-3 shadow-sm">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm font-medium">Keine Gebühren</span>
+              </div>
+              <div className="flex items-center justify-center text-green-600 bg-white rounded-lg p-3 shadow-sm">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm font-medium">Auto-Erstattung</span>
+              </div>
+            </div>
+            <div className="text-sm text-green-600 opacity-80 italic">
+              ⚡ Andere Hotels berechnen oft 50-100% bei Last-Minute-Stornierungen
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section className="py-20 bg-primary-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

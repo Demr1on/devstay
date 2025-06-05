@@ -35,28 +35,13 @@ export function calculateRefund(checkInDate: Date, totalPrice: number): {
   const now = new Date();
   const hoursUntilCheckIn = (checkInDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-  if (hoursUntilCheckIn >= 48) {
-    // 48+ Stunden: 100% Rückerstattung
-    return {
-      refundPercent: 100,
-      refundAmount: totalPrice,
-      allowedCancellation: true
-    };
-  } else if (hoursUntilCheckIn >= 24) {
-    // 24-48 Stunden: 50% Rückerstattung
-    return {
-      refundPercent: 50,
-      refundAmount: Math.round(totalPrice * 0.5),
-      allowedCancellation: true
-    };
-  } else {
-    // Weniger als 24 Stunden: Keine Rückerstattung
-    return {
-      refundPercent: 0,
-      refundAmount: 0,
-      allowedCancellation: false
-    };
-  }
+  // DevStay: Immer 100% kostenlose Stornierung (auch Last-Minute)
+  // Grund: Premium-Service und IT-Professionals haben oft kurzfristige Änderungen
+  return {
+    refundPercent: 100,
+    refundAmount: totalPrice,
+    allowedCancellation: true
+  };
 }
 
 // Buchung stornieren
@@ -227,7 +212,7 @@ async function sendCancellationEmails(booking: any, refundResult: CancellationRe
         ` : `
         <div class="refund-info">
           <h3>ℹ️ Keine Rückerstattung</h3>
-          <p>Aufgrund unserer Stornierungsbedingungen (weniger als 24 Stunden vor Check-in) erfolgt keine Rückerstattung.</p>
+                      <p>Ihre Buchung wurde vollständig storniert und der komplette Betrag wird erstattet.</p>
         </div>
         `}
         

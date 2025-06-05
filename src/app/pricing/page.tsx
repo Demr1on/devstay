@@ -305,13 +305,15 @@ export default function PricingPage() {
               </div>
             </div>
 
-            <div className="mt-8 bg-accent-50 rounded-xl p-6 text-center">
+            <div className="mt-8 bg-green-50 rounded-xl p-6 text-center">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Stornierungsbedingungen
               </h3>
-              <p className="text-gray-600">
-                Kostenlose Stornierung bis 24 Stunden vor Anreise. 
-                Bei späteren Stornierungen wird der Gesamtbetrag berechnet.
+              <p className="text-green-600 font-medium">
+                ✅ 100% kostenlose Stornierung jederzeit
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Volle Rückerstattung ohne Bearbeitungsgebühren
               </p>
             </div>
           </div>
