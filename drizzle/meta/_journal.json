@@ -15,6 +15,13 @@
       "when": 1749160004906,
       "tag": "0001_rainy_ogun",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1749166467700,
+      "tag": "0002_lucky_johnny_blaze",
+      "breakpoints": true
     }
   ]
 }

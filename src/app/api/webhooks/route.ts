@@ -162,11 +162,20 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
       amount: session.amount_total ? session.amount_total / 100 : 0,
     });
 
-    // 2. Bestätigungs-E-Mail senden
+    // 2. Bestätigungs-E-Mail an Kunde senden
     try {
       const emailResult = await sendConfirmationEmail(updatedBooking, session);
       
-      // 3. E-Mail-Log erstellen (erfolgreich)
+      // 3. Admin-Benachrichtigung senden
+      try {
+        await sendAdminNotification(updatedBooking, session);
+        console.log('📧 Admin-Benachrichtigung erfolgreich versendet');
+      } catch (adminEmailError) {
+        console.error('❌ Admin-E-Mail fehlgeschlagen:', adminEmailError);
+        // Admin-E-Mail-Fehler nicht kritisch - Kunde wurde bereits benachrichtigt
+      }
+
+      // 4. E-Mail-Log erstellen (erfolgreich)
       await logEmail({
         bookingId: updatedBooking.id,
         customerId: updatedBooking.customerId,
@@ -350,5 +359,47 @@ async function handleDispute(dispute: Stripe.Dispute) {
 
   } catch (error) {
     console.error('❌ Fehler bei Streitfall-Verarbeitung:', error);
+  }
+}
+
+// Admin-Benachrichtigung bei neuer Buchung
+async function sendAdminNotification(booking: any, session: Stripe.Checkout.Session) {
+  console.log('📧 Sende Admin-Benachrichtigung für Buchung:', booking.id);
+  
+  try {
+    const { notifyAdminCustomerInquiry } = await import('@/lib/email');
+    
+    const checkIn = new Date(booking.checkIn).toLocaleDateString('de-DE');
+    const checkOut = new Date(booking.checkOut).toLocaleDateString('de-DE');
+    
+    await notifyAdminCustomerInquiry({
+      customerName: session.metadata?.customerName || 'Unbekannt',
+      customerEmail: session.customer_email || '',
+      bookingId: booking.id,
+      subject: `🎉 Neue Buchung: ${checkIn} - ${checkOut}`,
+      message: `
+Neue Buchung eingegangen!
+
+Kunde: ${session.metadata?.customerName}
+E-Mail: ${session.customer_email}
+Buchungs-ID: ${booking.id}
+Check-in: ${checkIn}
+Check-out: ${checkOut}
+Nächte: ${booking.totalNights}
+Preis: ${booking.totalPrice}€
+Stripe Session: ${session.id}
+
+${session.metadata?.specialRequests ? `Besondere Wünsche: ${session.metadata.specialRequests}` : ''}
+
+Status: Bezahlt und bestätigt ✅
+      `.trim(),
+      urgency: 'medium'
+    });
+
+    console.log('✅ Admin-Benachrichtigung erfolgreich versendet');
+    
+  } catch (error) {
+    console.error('❌ Admin-Benachrichtigung fehlgeschlagen:', error);
+    throw error;
   }
 } 
