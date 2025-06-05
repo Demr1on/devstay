@@ -13,6 +13,7 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import getStripe, { fetchPostJSON } from '@/lib/stripe';
+import AvailabilityCalendar from '@/components/AvailabilityCalendar';
 
 interface BookingFormData {
   firstName: string;
@@ -180,6 +181,29 @@ export default function BookingPage() {
       </section>
 
       <div className="container mx-auto px-4 py-16">
+        {/* Verfügbarkeitskalender */}
+        <div className="mb-12 max-w-6xl mx-auto">
+          <AvailabilityCalendar 
+            selectionMode={true}
+            selectedStartDate={formData.checkIn ? new Date(formData.checkIn) : null}
+            selectedEndDate={formData.checkOut ? new Date(formData.checkOut) : null}
+            onDateSelect={(startDate, endDate) => {
+              if (startDate) {
+                setFormData(prev => ({
+                  ...prev,
+                  checkIn: startDate.toISOString().split('T')[0]
+                }));
+              }
+              if (endDate) {
+                setFormData(prev => ({
+                  ...prev,
+                  checkOut: endDate.toISOString().split('T')[0]
+                }));
+              }
+            }}
+          />
+        </div>
+
         <div className="grid lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
           
           {/* Buchungsformular */}
