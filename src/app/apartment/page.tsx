@@ -5,7 +5,6 @@ import {
   WifiIcon, 
   ComputerDesktopIcon, 
   HomeIcon,
-  CarIcon,
   ShieldCheckIcon,
   ClockIcon
 } from '@heroicons/react/24/outline';
