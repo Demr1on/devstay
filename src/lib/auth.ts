@@ -2,12 +2,17 @@ import NextAuth from "next-auth"
 import GitHub from "next-auth/providers/github"
 import crypto from 'crypto';
 
-// Erlaubte Admin E-Mail-Adressen
-const ADMIN_EMAILS = [
-  'daniel@devstay.de',
-  'info@devstay.de',
-  'dewalddaniel1@gmail.com', // GitHub-E-Mail für Admin-Zugang
-];
+// Erlaubte Admin E-Mail-Adressen aus Environment Variables
+const getAdminEmails = (): string[] => {
+  const adminEmails = process.env.ADMIN_EMAILS;
+  if (!adminEmails) {
+    console.warn('⚠️ ADMIN_EMAILS environment variable not set, using defaults');
+    return ['daniel@devstay.de', 'info@devstay.de'];
+  }
+  return adminEmails.split(',').map(email => email.trim());
+};
+
+const ADMIN_EMAILS = getAdminEmails();
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
