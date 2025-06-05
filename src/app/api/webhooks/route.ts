@@ -150,21 +150,48 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
       amount: session.amount_total ? session.amount_total / 100 : 0,
     });
 
-    // 2. Bestätigungs-E-Mail senden (wird später implementiert)
-    await sendConfirmationEmail(updatedBooking, session);
+    // 2. Bestätigungs-E-Mail senden
+    try {
+      const emailResult = await sendConfirmationEmail(updatedBooking, session);
+      
+      // 3. E-Mail-Log erstellen (erfolgreich)
+      await logEmail({
+        bookingId: updatedBooking.id,
+        customerId: updatedBooking.customerId,
+        emailType: 'confirmation',
+        recipient: session.customer_email || '',
+        subject: `✅ Buchungsbestätigung - ${session.metadata?.checkIn} bis ${session.metadata?.checkOut}`,
+        status: 'sent',
+        sentAt: new Date(),
+        metadata: {
+          messageId: emailResult.messageId,
+          stripeSessionId: session.id
+        }
+      });
 
-    // 3. E-Mail-Log erstellen
-    await logEmail({
-      bookingId: updatedBooking.id,
-      customerId: updatedBooking.customerId,
-      emailType: 'confirmation',
-      recipient: session.customer_email || '',
-      subject: 'Buchungsbestätigung - DevStay Apartment',
-      status: 'sent',
-      sentAt: new Date(),
-    });
-
-    console.log('📧 Bestätigungs-E-Mail versendet');
+      console.log('📧 Bestätigungs-E-Mail erfolgreich versendet und geloggt');
+      
+    } catch (emailError) {
+      console.error('❌ E-Mail-Versand fehlgeschlagen:', emailError);
+      
+      // E-Mail-Fehler loggen
+      await logEmail({
+        bookingId: updatedBooking.id,
+        customerId: updatedBooking.customerId,
+        emailType: 'confirmation',
+        recipient: session.customer_email || '',
+        subject: `✅ Buchungsbestätigung - ${session.metadata?.checkIn} bis ${session.metadata?.checkOut}`,
+        status: 'failed',
+        failureReason: emailError instanceof Error ? emailError.message : 'Unbekannter E-Mail-Fehler',
+        metadata: {
+          stripeSessionId: session.id,
+          error: emailError instanceof Error ? emailError.stack : String(emailError)
+        }
+      });
+      
+      // Buchung trotzdem als bestätigt markieren (Zahlung ist ja erfolgt)
+      console.log('⚠️ Buchung bestätigt trotz E-Mail-Fehler');
+    }
 
   } catch (error) {
     console.error('❌ Fehler bei Zahlungsverarbeitung:', error);
@@ -188,16 +215,34 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
   }
 }
 
-// Placeholder für E-Mail-Versand (wird später implementiert)
+// E-Mail-Versand für Buchungsbestätigung
 async function sendConfirmationEmail(booking: any, session: Stripe.Checkout.Session) {
-  console.log('📧 Bestätigungs-E-Mail würde versendet an:', session.customer_email);
+  console.log('📧 Sende Bestätigungs-E-Mail an:', session.customer_email);
   
-  // TODO: E-Mail-Service implementieren
-  // - Resend oder SendGrid Integration
-  // - HTML-Template für Buchungsbestätigung
-  // - PDF-Anhang mit Check-in Details
-  
-  return true;
+  try {
+    const { sendBookingConfirmation } = await import('@/lib/email');
+    
+    const emailData = {
+      customerName: session.metadata?.customerName || 'Geschätzte/r Gast/Gastin',
+      customerEmail: session.customer_email || '',
+      bookingId: booking.id,
+      checkIn: new Date(booking.checkIn),
+      checkOut: new Date(booking.checkOut),
+      totalNights: booking.totalNights,
+      totalPrice: parseFloat(booking.totalPrice),
+      stripeSessionId: session.id,
+      specialRequests: session.metadata?.specialRequests || undefined,
+    };
+
+    const result = await sendBookingConfirmation(emailData);
+    console.log('✅ Bestätigungs-E-Mail erfolgreich gesendet:', result.messageId);
+    
+    return result;
+    
+  } catch (error) {
+    console.error('❌ E-Mail-Versand fehlgeschlagen:', error);
+    throw error;
+  }
 }
 
 // Handler für fehlgeschlagene Zahlungen
