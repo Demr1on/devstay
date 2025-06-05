@@ -16,9 +16,12 @@ const stripe = new Stripe(stripeSecretKey || 'sk_test_dummy_key_for_build', {
 });
 
 export async function POST(req: NextRequest) {
+  console.log('🚀 Checkout Session aufgerufen:', new Date().toISOString());
+  
   try {
     // Runtime-Überprüfung der Stripe-Konfiguration
     if (!stripeSecretKey || stripeSecretKey === 'sk_test_dummy_key_for_build') {
+      console.error('❌ Stripe Secret Key nicht verfügbar');
       return NextResponse.json(
         { 
           error: 'Service temporär nicht verfügbar',
@@ -29,6 +32,13 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    console.log('📝 Request Body:', { 
+      amount: body.amount, 
+      checkIn: body.checkIn, 
+      checkOut: body.checkOut,
+      email: body.customerDetails?.email 
+    });
+    
     const { 
       amount, 
       currency = 'eur',
@@ -39,6 +49,7 @@ export async function POST(req: NextRequest) {
 
     // Validierung
     if (!amount || amount < 1) {
+      console.error('❌ Ungültiger Betrag:', amount);
       return NextResponse.json(
         { error: 'Ungültiger Betrag' },
         { status: 400 }
@@ -46,6 +57,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!customerDetails?.email) {
+      console.error('❌ E-Mail fehlt');
       return NextResponse.json(
         { error: 'E-Mail-Adresse ist erforderlich' },
         { status: 400 }
@@ -53,6 +65,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!checkIn || !checkOut) {
+      console.error('❌ Datum fehlt:', { checkIn, checkOut });
       return NextResponse.json(
         { error: 'Anreise- und Abreisedatum sind erforderlich' },
         { status: 400 }
@@ -62,21 +75,26 @@ export async function POST(req: NextRequest) {
     // Verfügbarkeit prüfen
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
+    console.log('📅 Termine prüfen:', { checkInDate, checkOutDate });
     
     try {
+      console.log('🔍 Verfügbarkeitsprüfung starten...');
       const availability = await checkAvailability(checkInDate, checkOutDate);
+      console.log('📊 Verfügbarkeit:', availability);
       
       if (!availability.available) {
+        console.error('❌ Nicht verfügbar:', availability);
         return NextResponse.json(
           { 
             error: 'Das Apartment ist für die gewählten Termine nicht verfügbar',
-            details: 'Bitte wählen Sie andere Termine'
+            details: 'Bitte wählen Sie andere Termine',
+            conflicts: availability.conflicts || []
           },
           { status: 409 }
         );
       }
     } catch (error) {
-      console.error('Verfügbarkeitsprüfung fehlgeschlagen:', error);
+      console.error('❌ Verfügbarkeitsprüfung Fehler:', error);
       return NextResponse.json(
         { error: 'Verfügbarkeitsprüfung fehlgeschlagen. Bitte versuchen Sie es erneut.' },
         { status: 500 }
