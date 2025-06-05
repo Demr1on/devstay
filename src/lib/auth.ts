@@ -6,7 +6,7 @@ import crypto from 'crypto';
 const ADMIN_EMAILS = [
   'daniel@devstay.de',
   'info@devstay.de',
-  // Hier weitere Admin-E-Mails hinzufügen
+  'dewalddaniel1@gmail.com', // GitHub-E-Mail für Admin-Zugang
 ];
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
