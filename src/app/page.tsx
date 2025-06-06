@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import PricingCard from '@/components/PricingCard';
+import PricingSection from '@/components/PricingSection';
 import { 
   fadeInUp, 
   fadeIn, 
@@ -386,41 +386,7 @@ export default function Home() {
       </motion.section>
 
       {/* Pricing Section */}
-      <motion.section 
-        className="py-20 bg-primary-50"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, amount: 0.3 }}
-        transition={{ duration: 0.8 }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            className="text-center mb-16"
-            variants={fadeInUp}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-secondary-900 mb-4">
-              Transparente Preise
-            </h2>
-            <p className="text-xl text-secondary-700 max-w-3xl mx-auto">
-              Faire Preise mit attraktiven Rabatten für längere Aufenthalte
-            </p>
-          </motion.div>
-
-          <motion.div 
-            className="max-w-md mx-auto"
-            variants={scaleIn}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            transition={{ delay: 0.3 }}
-          >
-            <PricingCard />
-          </motion.div>
-        </div>
-      </motion.section>
+      <PricingSection />
 
       {/* CTA Section */}
       <motion.section 
