@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { apartmentConfig } from '@/lib/config';
 import Image from 'next/image';
+import BookingButton from '@/components/BookingButton';
 import { 
   WifiIcon, 
   ComputerDesktopIcon, 
@@ -277,9 +278,9 @@ export default function ApartmentPage() {
             Buchen Sie jetzt Ihr vollausgestattetes IT-Apartment
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-accent-500 text-white px-8 py-3 rounded-lg font-semibold hover:bg-accent-600 transition-colors">
+            <BookingButton size="lg">
               Jetzt buchen
-            </button>
+            </BookingButton>
             <button className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary-900 transition-colors">
               Verfügbarkeit prüfen
             </button>

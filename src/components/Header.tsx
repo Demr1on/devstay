@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import BookingButton from './BookingButton';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -61,12 +62,9 @@ export default function Header() {
 
           {/* CTA Button */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link
-              href="/booking"
-              className="bg-accent-700 text-white px-6 py-2 rounded-lg font-medium hover:bg-accent-800 transition-colors duration-200 shadow-sm hover:shadow-md"
-            >
+            <BookingButton size="sm">
               Jetzt buchen
-            </Link>
+            </BookingButton>
           </div>
 
           {/* Mobile menu button */}
@@ -103,13 +101,13 @@ export default function Header() {
                 </Link>
               ))}
               <div className="pt-4 pb-2">
-                <Link
-                  href="/booking"
-                  className="block w-full text-center bg-accent-700 text-white px-6 py-3 rounded-lg font-medium hover:bg-accent-800 transition-colors"
+                <BookingButton 
+                  size="md" 
+                  className="w-full block text-center"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Jetzt buchen
-                </Link>
+                </BookingButton>
               </div>
             </div>
           </div>
