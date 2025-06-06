@@ -6,6 +6,7 @@ import PricingSection from '@/components/PricingSection';
 import BookingButton from '@/components/BookingButton';
 import RouteAnimation from '@/components/RouteAnimation';
 import FloorPlanSection from '@/components/FloorPlanSection';
+import ReviewsSection from '@/components/ReviewsSection';
 import { 
   fadeInUp, 
   fadeIn, 
@@ -422,6 +423,9 @@ export default function Home() {
 
       {/* Pricing Section */}
       <PricingSection />
+
+      {/* Reviews Section */}
+      <ReviewsSection />
 
     </div>
   );
