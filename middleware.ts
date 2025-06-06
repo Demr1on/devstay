@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// 🚧 MAINTENANCE MODE CONTROL
-const MAINTENANCE_MODE = process.env.MAINTENANCE_MODE === 'true';
-
 export function middleware(request: NextRequest) {
+  // 🚧 MAINTENANCE MODE CONTROL - Bei jedem Request prüfen
+  const MAINTENANCE_MODE = process.env.MAINTENANCE_MODE === 'true';
+  
   // Wenn Maintenance-Modus deaktiviert ist, normal weiterleiten
   if (!MAINTENANCE_MODE) {
     return NextResponse.next();
