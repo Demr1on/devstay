@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { PricingConfig } from '@/types';
+import { calculatePriceForNights } from '@/lib/stripe-products';
 
 interface PricingCardProps {
   config?: PricingConfig;
@@ -25,35 +26,30 @@ export default function PricingCard({ config = defaultConfig, className = '' }: 
   }, []);
 
   const calculatePrice = (duration: 'night' | 'week' | 'month') => {
-    const { basePrice, weeklyDiscountPercent, monthlyDiscountPercent } = config;
-    
+    // Verwende die neue Stripe Product-basierte Preisberechnung
     switch (duration) {
       case 'night':
-        return basePrice;
+        return calculatePriceForNights(1).totalPrice;
       case 'week':
-        const weeklyPrice = basePrice * 7;
-        const weeklyDiscount = (weeklyPrice * weeklyDiscountPercent) / 100;
-        return Math.round(weeklyPrice - weeklyDiscount);
+        return calculatePriceForNights(7).totalPrice;
       case 'month':
-        const monthlyPrice = basePrice * 30;
-        const monthlyDiscount = (monthlyPrice * monthlyDiscountPercent) / 100;
-        return Math.round(monthlyPrice - monthlyDiscount);
+        return calculatePriceForNights(30).totalPrice;
       default:
-        return basePrice;
+        return calculatePriceForNights(1).totalPrice;
     }
   };
 
   const getPricePerNight = (duration: 'night' | 'week' | 'month') => {
-    const totalPrice = calculatePrice(duration);
+    // Verwende die neue Stripe Product-basierte Preisberechnung pro Nacht
     switch (duration) {
       case 'night':
-        return totalPrice;
+        return calculatePriceForNights(1).pricePerNight;
       case 'week':
-        return Math.round(totalPrice / 7);
+        return calculatePriceForNights(7).pricePerNight;
       case 'month':
-        return Math.round(totalPrice / 30);
+        return calculatePriceForNights(30).pricePerNight;
       default:
-        return totalPrice;
+        return calculatePriceForNights(1).pricePerNight;
     }
   };
 
@@ -148,8 +144,8 @@ export default function PricingCard({ config = defaultConfig, className = '' }: 
         {selectedDuration !== 'night' && (
           <div className="bg-accent-100 border border-accent-200 rounded-lg p-3 mb-6 text-center">
             <div className="text-accent-800 font-semibold">
-              {selectedDuration === 'week' && `${config.weeklyDiscountPercent}% Rabatt`}
-              {selectedDuration === 'month' && `${config.monthlyDiscountPercent}% Rabatt`}
+              {selectedDuration === 'week' && `${calculatePriceForNights(7).discountPercent}% Rabatt`}
+              {selectedDuration === 'month' && `${calculatePriceForNights(30).discountPercent}% Rabatt`}
             </div>
             <div className="text-sm text-accent-700">
               Sparen Sie bei längeren Aufenthalten!
@@ -173,8 +169,8 @@ export default function PricingCard({ config = defaultConfig, className = '' }: 
               <span>Rabatt</span>
               <span>
                 -{selectedDuration === 'week' 
-                  ? Math.round((config.basePrice * 7 * config.weeklyDiscountPercent) / 100)
-                  : Math.round((config.basePrice * 30 * config.monthlyDiscountPercent) / 100)
+                  ? (config.basePrice * 7) - calculatePriceForNights(7).totalPrice
+                  : (config.basePrice * 30) - calculatePriceForNights(30).totalPrice
                 }€
               </span>
             </div>

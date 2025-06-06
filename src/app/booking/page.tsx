@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Metadata } from 'next';
 import { pricingConfig, siteConfig } from '@/lib/config';
 import { addDays, differenceInDays, format } from 'date-fns';
+import { calculatePriceForNights } from '@/lib/stripe-products';
 import { de } from 'date-fns/locale';
 import { 
   CalendarDaysIcon, 
@@ -39,6 +40,14 @@ export default function BookingPage() {
   });
   const [errors, setErrors] = useState<Partial<BookingFormData>>({});
   const [isFormValid, setIsFormValid] = useState(false);
+
+  // Hilfsfunktion: Datum zu lokalem String (ohne UTC-Konvertierung)
+  const dateToLocalString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   // Berechne minimale Daten
   const tomorrow = addDays(new Date(), 1);
@@ -76,7 +85,7 @@ export default function BookingPage() {
     setIsFormValid(Object.keys(newErrors).length === 0);
   }, [formData]);
 
-  // Berechne Preise
+  // Berechne Preise mit Stripe Product-basierter Logik
   const calculateBookingPrice = () => {
     if (!formData.checkIn || !formData.checkOut) {
       return null;
@@ -90,30 +99,20 @@ export default function BookingPage() {
     }
 
     const nights = differenceInDays(checkOutDate, checkInDate);
-    const basePrice = pricingConfig.basePrice;
-    let totalBasePrice = basePrice * nights;
-    let discount = 0;
-    let discountPercent = 0;
-
-    // Rabatte anwenden
-    if (nights >= 30) {
-      discountPercent = pricingConfig.monthlyDiscountPercent;
-      discount = Math.round(totalBasePrice * discountPercent / 100);
-    } else if (nights >= 7) {
-      discountPercent = pricingConfig.weeklyDiscountPercent;
-      discount = Math.round(totalBasePrice * discountPercent / 100);
-    }
-
-    const finalPrice = totalBasePrice - discount;
-    const pricePerNight = Math.round(finalPrice / nights);
+    
+    // Verwende die neue Stripe Product-basierte Preisberechnung
+    const pricing = calculatePriceForNights(nights);
+    const basePrice = pricingConfig.basePrice * nights; // Grundpreis ohne Rabatt
+    const discount = basePrice - pricing.totalPrice;
 
     return {
       nights,
-      basePrice: totalBasePrice,
+      basePrice,
       discount,
-      discountPercent,
-      finalPrice,
-      pricePerNight
+      discountPercent: pricing.discountPercent,
+      finalPrice: pricing.totalPrice,
+      pricePerNight: pricing.pricePerNight,
+      stripeProduct: pricing.product
     };
   };
 
@@ -150,17 +149,30 @@ export default function BookingPage() {
         }),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('JSON Parse Error:', jsonError);
+        data = { error: 'Server-Antwort konnte nicht verarbeitet werden' };
+      }
 
       if (!response.ok) {
-        console.error('Checkout Session Error:', data);
+        console.error('Checkout Session Error:', { 
+          status: response.status, 
+          statusText: response.statusText, 
+          data 
+        });
         
         if (response.status === 409) {
-          alert(`Das Apartment ist für die gewählten Termine nicht verfügbar.\n\n${data.details || 'Bitte wählen Sie andere Termine.'}`);
+          const message = `Das Apartment ist für die gewählten Termine nicht verfügbar.\n\n${data?.details || 'Bitte wählen Sie andere Termine.'}`;
+          alert(message);
         } else if (response.status === 500) {
-          alert('Server-Fehler: ' + (data.error || 'Bitte versuchen Sie es später erneut.'));
+          alert('Server-Fehler: ' + (data?.error || 'Bitte versuchen Sie es später erneut.'));
+        } else if (response.status === 400) {
+          alert('Eingabefehler: ' + (data?.error || 'Bitte überprüfen Sie Ihre Eingaben.'));
         } else {
-          alert(data.error || 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
+          alert(data?.error || 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
         }
         return;
       }
@@ -213,13 +225,13 @@ export default function BookingPage() {
               if (startDate) {
                 setFormData(prev => ({
                   ...prev,
-                  checkIn: startDate.toISOString().split('T')[0]
+                  checkIn: dateToLocalString(startDate)
                 }));
               }
               if (endDate) {
                 setFormData(prev => ({
                   ...prev,
-                  checkOut: endDate.toISOString().split('T')[0]
+                  checkOut: dateToLocalString(endDate)
                 }));
               }
             }}

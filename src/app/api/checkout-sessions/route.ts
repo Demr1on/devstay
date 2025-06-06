@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { formatAmountForStripe } from '@/lib/stripe';
 import { checkAvailability, findOrCreateCustomer, createBooking } from '@/lib/db/queries';
+import { calculatePriceForNights, createStripeLineItem } from '@/lib/stripe-products';
 
 // Überprüfung der Stripe-Konfiguration
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY || process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY;
@@ -114,23 +115,57 @@ export async function POST(req: NextRequest) {
       // Nächte berechnen
       const totalNights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
       
-      // Checkout Session erstellen
+      // Preis mit Stripe Product IDs berechnen
+      const pricing = calculatePriceForNights(totalNights);
+      const expectedAmount = pricing.totalPrice;
+      
+      // Validierung: Frontend-Betrag muss mit Backend-Berechnung übereinstimmen
+      if (Math.abs(amount - expectedAmount) > 1) {
+        console.error('❌ Preisvalidierung fehlgeschlagen:', { 
+          frontendAmount: amount, 
+          backendAmount: expectedAmount,
+          nights: totalNights 
+        });
+        return NextResponse.json(
+          { 
+            error: 'Preisvalidierung fehlgeschlagen',
+            details: `Erwarteter Preis: ${expectedAmount}€, übermittelt: ${amount}€`
+          },
+          { status: 400 }
+        );
+      }
+
+      console.log('💰 Stripe Product verwendet:', {
+        product: pricing.product.name,
+        priceId: pricing.product.priceId,
+        totalPrice: pricing.totalPrice,
+        nights: totalNights,
+        discountPercent: pricing.discountPercent
+      });
+      
+      // Checkout Session mit Stripe Product ID erstellen
       const checkoutSession = await stripe.checkout.sessions.create({
         mode: 'payment',
         payment_method_types: ['card', 'sepa_debit'],
         line_items: [
           {
             price_data: {
-              currency: currency,
+              currency: 'eur',
               product_data: {
-                name: 'DevStay - Apartment Buchung',
-                description: `Aufenthalt vom ${checkIn} bis ${checkOut}`,
-                images: ['https://devstay.de/images/apartment-hero.jpg'],
+                name: `${pricing.product.name} (${totalNights} Nächte)`,
+                description: `Aufenthalt vom ${checkIn} bis ${checkOut} | ${pricing.discountPercent}% Rabatt`,
+                images: ['https://devstay.vercel.app/images/apartment-hero.jpg'],
+                metadata: {
+                  product_category: pricing.product.productId,
+                  nights: totalNights.toString(),
+                  discount_percent: pricing.discountPercent.toString(),
+                  price_per_night: pricing.pricePerNight.toString()
+                }
               },
-              unit_amount: formatAmountForStripe(amount, currency),
+              unit_amount: pricing.totalPrice * 100, // Euro zu Cent
             },
             quantity: 1,
-          },
+          }
         ],
         customer_creation: 'always',
         customer_email: customerDetails.email,
@@ -154,15 +189,20 @@ export async function POST(req: NextRequest) {
         locale: 'de',
       });
 
-      // Buchung erstellen mit Stripe Session ID
+      // Buchung erstellen mit Stripe Session ID und korrekten Preisangaben
+      const basePrice = 89 * totalNights; // Grundpreis ohne Rabatte
+      const discount = basePrice - pricing.totalPrice;
+      
       const newBooking = await createBooking({
         customerId: customer.id,
         stripeSessionId: checkoutSession.id,
         checkIn: checkInDate,
         checkOut: checkOutDate,
         totalNights,
-        basePrice: (amount * 1.1).toString(), // Basis ohne Rabatt
-        totalPrice: amount.toString(),
+        basePrice: basePrice.toString(),
+        discountPercent: pricing.discountPercent,
+        discountAmount: discount.toString(),
+        totalPrice: pricing.totalPrice.toString(),
         specialRequests: customerDetails.specialRequests || null,
         status: 'pending',
         paymentStatus: 'pending',
