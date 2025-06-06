@@ -60,8 +60,13 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/reviews" className="text-secondary-300 hover:text-white transition-colors">
-                  Bewertungen
+                <Link href="/booking" className="text-secondary-300 hover:text-white transition-colors">
+                  Buchen
+                </Link>
+              </li>
+              <li>
+                <Link href="/cancel-booking" className="text-secondary-300 hover:text-white transition-colors">
+                  Stornierung
                 </Link>
               </li>
             </ul>

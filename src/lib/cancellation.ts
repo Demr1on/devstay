@@ -3,8 +3,9 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { Resend } from 'resend';
 import { db, bookings } from '@/lib/db';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { logEmail } from '@/lib/db/queries';
+import { siteConfig } from '@/lib/config';
 
 // Stripe und Resend Instanzen
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -49,7 +50,7 @@ export async function cancelBooking(cancellationData: CancellationData): Promise
   const { bookingId, reason, requestedBy } = cancellationData;
 
   try {
-    // 1. Buchung aus Datenbank laden
+    // 1. Buchung mit optimistic locking laden und prüfen
     const [booking] = await db
       .select({
         booking: bookings,
@@ -66,6 +67,10 @@ export async function cancelBooking(cancellationData: CancellationData): Promise
       throw new Error('Buchung ist bereits storniert');
     }
 
+    if (!booking.booking.stripePaymentIntentId) {
+      throw new Error('Keine Zahlungsinformationen vorhanden - Stornierung nicht möglich');
+    }
+
     // 2. Refund-Berechtigung prüfen
     const checkInDate = new Date(booking.booking.checkIn);
     const totalPrice = parseFloat(booking.booking.totalPrice);
@@ -78,58 +83,70 @@ export async function cancelBooking(cancellationData: CancellationData): Promise
       message: ''
     };
 
-    // 3. Stripe-Rückerstattung verarbeiten
-    if (refundCalculation.refundAmount > 0 && booking.booking.stripePaymentIntentId) {
-      try {
-        const refund = await stripe.refunds.create({
-          payment_intent: booking.booking.stripePaymentIntentId,
-          amount: Math.round(refundCalculation.refundAmount * 100), // Cent
-          reason: 'requested_by_customer',
+    let stripeRefund: any = null;
+
+    // 3. Atomare Transaktion: Stripe Refund + DB Update
+    try {
+      // Zuerst Stripe Refund erstellen
+      stripeRefund = await stripe.refunds.create({
+        payment_intent: booking.booking.stripePaymentIntentId,
+        amount: Math.round(refundCalculation.refundAmount * 100), // Cent
+        reason: 'requested_by_customer',
+        metadata: {
+          bookingId: bookingId,
+          originalAmount: totalPrice.toString(),
+          refundPercent: refundCalculation.refundPercent.toString(),
+          cancelledBy: requestedBy
+        }
+      });
+
+      console.log('✅ Stripe-Rückerstattung erfolgreich:', stripeRefund.id);
+
+      // Dann DB Update mit Race Condition Protection
+      const updateResult = await db
+        .update(bookings)
+        .set({
+          status: 'cancelled',
+          paymentStatus: 'refunded',
+          updatedAt: new Date(),
           metadata: {
-            bookingId: bookingId,
-            originalAmount: totalPrice.toString(),
-            refundPercent: refundCalculation.refundPercent.toString(),
-            cancelledBy: requestedBy
+            ...booking.booking.metadata as any,
+            cancellation: {
+              cancelledAt: new Date().toISOString(),
+              cancelledBy: requestedBy,
+              reason: reason || 'Keine Angabe',
+              refundAmount: refundCalculation.refundAmount,
+              refundPercent: refundCalculation.refundPercent,
+              refundId: stripeRefund.id
+            }
           }
-        });
+        })
+        .where(and(eq(bookings.id, bookingId), eq(bookings.status, 'confirmed'))) // Race condition protection
+        .returning();
 
-        refundResult.refundId = refund.id;
-        refundResult.success = true;
-        refundResult.message = `Rückerstattung von ${refundCalculation.refundAmount}€ (${refundCalculation.refundPercent}%) erfolgreich verarbeitet`;
-        
-        console.log('✅ Stripe-Rückerstattung erfolgreich:', refund.id);
-
-      } catch (stripeError) {
-        console.error('❌ Stripe-Rückerstattung fehlgeschlagen:', stripeError);
-        throw new Error(`Rückerstattung fehlgeschlagen: ${stripeError instanceof Error ? stripeError.message : 'Unbekannter Fehler'}`);
+      if (updateResult.length === 0) {
+        // DB Update fehlgeschlagen - möglicherweise bereits storniert
+        console.error('❌ DB Update fehlgeschlagen - Buchung bereits geändert');
+        throw new Error('Buchung konnte nicht storniert werden - Status bereits geändert');
       }
-    } else if (refundCalculation.refundAmount === 0) {
+
+      refundResult.refundId = stripeRefund.id;
       refundResult.success = true;
-      refundResult.message = 'Stornierung ohne Rückerstattung (weniger als 24h vor Check-in)';
+      refundResult.message = `Rückerstattung von ${refundCalculation.refundAmount}€ (${refundCalculation.refundPercent}%) erfolgreich verarbeitet`;
+
+    } catch (stripeError) {
+      console.error('❌ Stripe-Rückerstattung fehlgeschlagen:', stripeError);
+      throw new Error(`Rückerstattung fehlgeschlagen: ${stripeError instanceof Error ? stripeError.message : 'Unbekannter Fehler'}`);
     }
 
-    // 4. Buchungsstatus in Datenbank aktualisieren
-    await db
-      .update(bookings)
-      .set({
-        status: 'cancelled',
-        updatedAt: new Date(),
-        metadata: {
-          ...booking.booking.metadata as any,
-          cancellation: {
-            cancelledAt: new Date().toISOString(),
-            cancelledBy: requestedBy,
-            reason: reason || 'Keine Angabe',
-            refundAmount: refundCalculation.refundAmount,
-            refundPercent: refundCalculation.refundPercent,
-            refundId: refundResult.refundId
-          }
-        }
-      })
-      .where(eq(bookings.id, bookingId));
-
-    // 5. E-Mails versenden
-    await sendCancellationEmails(booking.booking, refundResult, reason);
+    // 4. E-Mails versenden (nicht kritisch - darf nicht die Stornierung blockieren)
+    try {
+      await sendCancellationEmails(booking.booking, refundResult, reason);
+      console.log('✅ Stornierungsbenachrichtigungen versendet');
+    } catch (emailError) {
+      console.error('⚠️ E-Mail-Versand fehlgeschlagen (nicht kritisch):', emailError);
+      // Email-Fehler loggen aber nicht die Stornierung abbrechen
+    }
 
     console.log('✅ Buchung erfolgreich storniert:', bookingId);
     return refundResult;
@@ -196,7 +213,6 @@ async function sendCancellationEmails(booking: any, refundResult: CancellationRe
           ` : ''}
         </div>
         
-        ${refundResult.refundAmount > 0 ? `
         <div class="refund-info">
           <h3>💰 Rückerstattung</h3>
           <div class="detail-row">
@@ -209,16 +225,10 @@ async function sendCancellationEmails(booking: any, refundResult: CancellationRe
           </div>
           <p><small>Die Rückerstattung wird in 5-10 Werktagen auf Ihrer ursprünglichen Zahlungsmethode sichtbar.</small></p>
         </div>
-        ` : `
-        <div class="refund-info">
-          <h3>ℹ️ Keine Rückerstattung</h3>
-                      <p>Ihre Buchung wurde vollständig storniert und der komplette Betrag wird erstattet.</p>
-        </div>
-        `}
         
         <p>Bei Fragen stehen wir Ihnen gerne zur Verfügung:</p>
-        <p>📧 E-Mail: <a href="mailto:info@devstay.de">info@devstay.de</a><br>
-        📱 WhatsApp: <a href="https://wa.me/4917641847930">+49 176 41847930</a></p>
+        <p>📧 E-Mail: <a href="mailto:${siteConfig.contact.email}">${siteConfig.contact.email}</a><br>
+        📱 WhatsApp: <a href="https://wa.me/${siteConfig.contact.whatsapp.replace(/[^0-9]/g, '')}">${siteConfig.contact.whatsapp}</a></p>
         
         <p>Das DevStay Team</p>
       </div>

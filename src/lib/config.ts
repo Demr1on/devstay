@@ -56,7 +56,8 @@ export const siteConfig = {
   url: 'https://devstay.de',
   contact: {
     email: 'info@devstay.de',
-    phone: '+49 123 456 789'
+    phone: '+49 123 456 789',
+    whatsapp: '+49 176 41847930'
   },
   booking: {
     maxAdvanceBookingDays: 1,       // Bis zu 1 Tag im Voraus buchbar

@@ -125,6 +125,19 @@ export async function sendBookingConfirmation(bookingData: BookingEmailData) {
           </ul>
         </div>
         
+        <div class="highlight" style="background: #fef3c7; border-left: 4px solid #f59e0b;">
+          <h3>🔄 Kostenlose Stornierung</h3>
+          <p><strong>100% Rückerstattung bis kurz vor Check-in möglich!</strong></p>
+          <p>Pläne geändert? Kein Problem - stornieren Sie einfach online:</p>
+          <p style="text-align: center; margin: 20px 0;">
+            <a href="https://devstay.de/cancel-booking" 
+               style="background: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+              📋 Online stornieren
+            </a>
+          </p>
+          <p><small>Sie benötigen Ihre Buchungsnummer (${bookingId.substring(0, 8).toUpperCase()}) und Postleitzahl.</small></p>
+        </div>
+        
         <h3>📞 Kontakt</h3>
         <p>Bei Fragen erreichen Sie uns:</p>
         <p>📧 E-Mail: <a href="mailto:info@devstay.de">info@devstay.de</a><br>
