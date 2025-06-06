@@ -245,7 +245,7 @@ const FloatingReviewCard = ({ review, index }: { review: Review; index: number }
 
 export default function ReviewsSection() {
   return (
-    <section className="py-16 bg-white overflow-hidden min-h-[700px] relative">
+    <section id="bewertungen" className="py-16 bg-white overflow-hidden min-h-[700px] relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header */}

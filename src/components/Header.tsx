@@ -2,15 +2,53 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import BookingButton from './BookingButton';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Scroll zu Bewertungen Section
+  const scrollToReviews = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    if (pathname === '/') {
+      // Auf Startseite - direkt scrollen
+      const reviewsSection = document.getElementById('bewertungen');
+      if (reviewsSection) {
+        reviewsSection.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
+    } else {
+      // Auf anderer Seite - zur Startseite navigieren und dann scrollen
+      router.push('/#bewertungen');
+    }
+    
+    setIsMenuOpen(false);
+  };
 
   // Verhindere Hydration-Fehler
   useEffect(() => {
     setIsClient(true);
+    
+    // Prüfe auf Hash-Fragment beim ersten Laden
+    const hash = window.location.hash;
+    if (hash === '#bewertungen') {
+      setTimeout(() => {
+        const reviewsSection = document.getElementById('bewertungen');
+        if (reviewsSection) {
+          reviewsSection.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      }, 100); // Kurze Verzögerung um sicherzustellen, dass die Seite geladen ist
+    }
   }, []);
 
   // Schließe Menü bei Escape-Taste
@@ -50,13 +88,23 @@ export default function Header() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
             {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="text-primary-100 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200 rounded-md hover:bg-primary-700/30"
-              >
-                {item.name}
-              </Link>
+              item.name === 'Bewertungen' ? (
+                <button
+                  key={item.name}
+                  onClick={scrollToReviews}
+                  className="text-primary-100 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200 rounded-md hover:bg-primary-700/30"
+                >
+                  {item.name}
+                </button>
+              ) : (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className="text-primary-100 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200 rounded-md hover:bg-primary-700/30"
+                >
+                  {item.name}
+                </Link>
+              )
             ))}
           </nav>
 
@@ -91,14 +139,24 @@ export default function Header() {
           <div className="md:hidden animate-fade-in">
             <div className="px-2 pt-2 pb-3 space-y-1 bg-gradient-to-r from-stone to-primary-800 border-t border-primary-600/30">
               {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className="block px-3 py-2 text-base font-medium text-primary-100 hover:text-white hover:bg-primary-700/30 rounded-md transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item.name}
-                </Link>
+                item.name === 'Bewertungen' ? (
+                  <button
+                    key={item.name}
+                    onClick={scrollToReviews}
+                    className="block w-full text-left px-3 py-2 text-base font-medium text-primary-100 hover:text-white hover:bg-primary-700/30 rounded-md transition-colors"
+                  >
+                    {item.name}
+                  </button>
+                ) : (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className="block px-3 py-2 text-base font-medium text-primary-100 hover:text-white hover:bg-primary-700/30 rounded-md transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {item.name}
+                  </Link>
+                )
               ))}
               <div className="pt-4 pb-2">
                 <BookingButton 
