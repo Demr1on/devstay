@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { PricingConfig } from '@/types';
 import { calculatePriceForNights } from '@/lib/stripe-products';
 
@@ -18,12 +18,6 @@ const defaultConfig: PricingConfig = {
 
 export default function PricingCard({ config = defaultConfig, className = '' }: PricingCardProps) {
   const [selectedDuration, setSelectedDuration] = useState<'night' | 'week' | 'month'>('night');
-  const [isClient, setIsClient] = useState(false);
-
-  // Verhindere Hydration-Fehler
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const calculatePrice = (duration: 'night' | 'week' | 'month') => {
     // Verwende die neue Stripe Product-basierte Preisberechnung
@@ -78,24 +72,6 @@ export default function PricingCard({ config = defaultConfig, className = '' }: 
         return 1;
     }
   };
-
-  // Erst rendern wenn Client bereit ist
-  if (!isClient) {
-    return (
-      <div className={`bg-white rounded-xl shadow-lg border border-primary-200 overflow-hidden ${className}`}>
-        <div className="bg-primary-800 text-white p-6 text-center">
-          <h3 className="text-2xl font-bold mb-2">Preise & Verfügbarkeit</h3>
-          <p className="text-primary-200">Perfekt für ITler & Remote Worker</p>
-        </div>
-        <div className="p-6 animate-pulse">
-          <div className="h-12 bg-primary-100 rounded mb-6"></div>
-          <div className="h-16 bg-primary-100 rounded mb-6"></div>
-          <div className="h-24 bg-primary-100 rounded mb-6"></div>
-          <div className="h-12 bg-primary-100 rounded"></div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className={`bg-white rounded-xl shadow-lg border border-primary-200 overflow-hidden ${className}`}>

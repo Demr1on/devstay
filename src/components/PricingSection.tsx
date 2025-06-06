@@ -287,8 +287,9 @@ export default function PricingSection() {
           className="hidden lg:grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16 items-stretch"
           variants={staggerContainer}
           initial="initial"
+          animate="animate"
           whileInView="animate"
-          viewport={{ once: true, amount: 0.2 }}
+          viewport={{ once: true, amount: 0.1, margin: "0px 0px -100px 0px" }}
         >
           {pricingTiers.map((tier, index) => (
             <PricingCard key={tier.id} tier={tier} index={index} />
