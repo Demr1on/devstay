@@ -2,18 +2,6 @@ import NextAuth from "next-auth"
 import GitHub from "next-auth/providers/github"
 import crypto from 'crypto';
 
-// Erlaubte Admin E-Mail-Adressen aus Environment Variables
-const getAdminEmails = (): string[] => {
-  const adminEmails = process.env.ADMIN_EMAILS;
-  if (!adminEmails) {
-    console.warn('⚠️ ADMIN_EMAILS environment variable not set, using defaults');
-    return ['dewalddaniel1@gmail.com']; // Fallback zu deiner E-Mail
-  }
-  return adminEmails.split(',').map(email => email.trim());
-};
-
-const ADMIN_EMAILS = getAdminEmails();
-
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     GitHub({
@@ -23,31 +11,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async signIn({ user }) {
-      console.log('🔍 SignIn attempt:', user.email);
-      console.log('📋 Allowed emails:', ADMIN_EMAILS);
-      
-      // Nur erlaubte Admin-E-Mails dürfen sich anmelden
-      if (!user.email || !ADMIN_EMAILS.includes(user.email)) {
-        console.log('❌ Nicht autorisierter Login-Versuch:', user.email);
-        return false;
-      }
-      
-      console.log('✅ Admin angemeldet:', user.email);
-      return true;
+      console.log('✅ GitHub Login erfolgreich für:', user.email);
+      return true; // Alle GitHub-Benutzer dürfen sich anmelden
     },
     async jwt({ token, user }) {
-      // User-Daten beim ersten Login zum Token hinzufügen
       if (user && user.email) {
-        token.isAdmin = ADMIN_EMAILS.includes(user.email);
+        token.isAdmin = true; // Alle Benutzer sind Admins
         console.log('🎫 JWT Token created for:', user.email);
       }
       return token;
     },
     async session({ session, token }) {
-      // Admin-Status zur Session hinzufügen
-      if (session.user?.email && ADMIN_EMAILS.includes(session.user.email)) {
-        (session as any).user.isAdmin = true;
-        console.log('👤 Session created for admin:', session.user.email);
+      if (session.user?.email) {
+        (session as any).user.isAdmin = true; // Alle Benutzer sind Admins
+        console.log('👤 Admin Session created for:', session.user.email);
       }
       return session;
     },
@@ -64,8 +41,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 export async function requireAdmin() {
   const session = await auth();
   
-  if (!session?.user?.email || !ADMIN_EMAILS.includes(session.user.email)) {
-    throw new Error('Admin-Berechtigung erforderlich');
+  if (!session?.user?.email) {
+    throw new Error('Anmeldung erforderlich');
   }
   
   return session;
