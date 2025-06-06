@@ -16,11 +16,8 @@ export default async function AdminPage() {
     redirect('/admin/signin');
   }
 
-  // Admin-Berechtigung prüfen
-  const ADMIN_EMAILS = ['daniel@devstay.de', 'info@devstay.de'];
-  if (!ADMIN_EMAILS.includes(session.user.email)) {
-    redirect('/admin/error?error=AccessDenied');
-  }
+  // Jeder authentifizierte Benutzer ist Admin
+  console.log('✅ Admin Dashboard für:', session.user.email);
 
   // Buchungen mit Kundendaten laden
   const allBookings = await db
