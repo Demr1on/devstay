@@ -1,7 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { motion, useInView } from 'framer-motion';
+import { useEffect, useState, useRef } from 'react';
 
 interface RouteAnimationProps {
   className?: string;
@@ -14,12 +14,20 @@ export default function RouteAnimation({
   autoPlay = true,
   onProgressChange
 }: RouteAnimationProps) {
-  const [isAnimating, setIsAnimating] = useState(autoPlay);
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, amount: 0.5 });
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const routePath = "M360.03,274.83 L395.64,268.17 L395.86,266.76 L360.66,227.04 L359.71,226.54 L341.98,136 L247.61,107.05 L253.73,100.62 L253.52,100.72 L224.21,86.15 L214.62,57.25 L213.34,56.63 L142.18,23.62 L87.07,56.88 L68.40,38.25";
   
   useEffect(() => {
-    if (!autoPlay) return;
+    if (isInView) {
+      setIsAnimating(true);
+    }
+  }, [isInView]);
+
+  useEffect(() => {
+    if (!autoPlay || !isInView) return;
     
     const interval = setInterval(() => {
       setIsAnimating(false);
@@ -27,7 +35,7 @@ export default function RouteAnimation({
     }, 16500);
 
     return () => clearInterval(interval);
-  }, [autoPlay]);
+  }, [autoPlay, isInView]);
 
   const lineVariants = {
     hidden: {
@@ -83,6 +91,7 @@ export default function RouteAnimation({
 
   return (
     <div 
+      ref={ref}
       className={`relative w-full h-80 ${className}`} 
       style={{ overflow: 'visible' }}
     >

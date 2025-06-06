@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import PricingSection from '@/components/PricingSection';
 import BookingButton from '@/components/BookingButton';
 import RouteAnimation from '@/components/RouteAnimation';
+import FloorPlanSection from '@/components/FloorPlanSection';
 import { 
   fadeInUp, 
   fadeIn, 
@@ -70,8 +71,11 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary-700 via-primary-800 to-secondary-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <section className="bg-gradient-to-br from-stone via-primary-800 to-shadow text-white relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-gradient-to-r from-mist/10 to-transparent"></div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative">
           <div className="text-center">
             <motion.h1 
               className="text-4xl md:text-6xl font-bold mb-6"
@@ -80,7 +84,7 @@ export default function Home() {
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
               Ihr perfektes
-              <span className="block text-primary-200">Tech-Apartment</span>
+              <span className="block text-mist">Tech-Apartment</span>
             </motion.h1>
             <motion.p 
               className="text-xl md:text-2xl mb-8 text-primary-100 max-w-3xl mx-auto"
@@ -99,7 +103,7 @@ export default function Home() {
             >
               <Link
                 href="/apartment"
-                className="bg-white text-primary-800 px-8 py-4 rounded-lg font-semibold hover:bg-primary-50 transition-all duration-300 shadow-lg hover:shadow-xl"
+                className="bg-white text-stone px-8 py-4 rounded-lg font-semibold hover:bg-mist hover:text-white transition-all duration-300 shadow-lg hover:shadow-xl"
               >
                 Apartment ansehen
               </Link>
@@ -109,35 +113,6 @@ export default function Home() {
             </motion.div>
           </div>
         </div>
-
-        {/* Stats */}
-        <motion.div 
-          className="bg-white/10 backdrop-blur-sm border-t border-white/20"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-        >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <motion.div 
-              className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center"
-              variants={staggerContainer}
-              initial="initial"
-              animate="animate"
-            >
-              {[
-                { number: "400", label: "Mbit/s Internet" },
-                { number: "2", label: "Monitore" },
-                { number: "89€", label: "pro Nacht" },
-                { number: "24h", label: "Vorab-Buchung" }
-              ].map((stat, index) => (
-                <motion.div key={index} variants={numberCountUp}>
-                  <div className="text-3xl font-bold text-primary-200">{stat.number}</div>
-                  <div className="text-primary-300">{stat.label}</div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </motion.div>
       </section>
 
       {/* Features Section */}
@@ -441,6 +416,9 @@ export default function Home() {
           </div>
         </div>
       </motion.section>
+
+      {/* Floor Plan Section */}
+      <FloorPlanSection />
 
       {/* Pricing Section */}
       <PricingSection />

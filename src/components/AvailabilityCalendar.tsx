@@ -229,6 +229,7 @@ export default function AvailabilityCalendar({
         </div>
       ) : (
         <>
+
           {/* Kalender */}
           <div className="grid grid-cols-7 gap-2">
             {/* Wochentage Header */}

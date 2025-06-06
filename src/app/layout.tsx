@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import MantineProviderWrapper from "@/components/MantineProvider";
 
 export const metadata: Metadata = {
   title: "DevStay - IT Apartment Bad Friedrichshall | Kurzzeitvermietung für Entwickler",
@@ -70,11 +71,13 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased min-h-screen flex flex-col" suppressHydrationWarning>
-        <Header />
-        <main className="flex-grow">
-          {children}
-        </main>
-        <Footer />
+        <MantineProviderWrapper>
+          <Header />
+          <main className="flex-grow">
+            {children}
+          </main>
+          <Footer />
+        </MantineProviderWrapper>
       </body>
     </html>
   );
