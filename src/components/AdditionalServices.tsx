@@ -24,63 +24,6 @@ interface AdditionalService {
 
 const additionalServices: AdditionalService[] = [
   {
-    id: 'early-checkin',
-    icon: ClockIcon,
-    name: 'Early Check-in',
-    description: 'Check-in ab 12:00 statt 15:00',
-    price: 25,
-    unit: 'einmalig'
-  },
-  {
-    id: 'late-checkout',
-    icon: ClockIcon,
-    name: 'Late Check-out',
-    description: 'Check-out bis 14:00 statt 11:00',
-    price: 25,
-    unit: 'einmalig'
-  },
-  {
-    id: 'premium-coffee',
-    icon: BeakerIcon,
-    name: 'Premium Kaffee-Paket',
-    description: 'Nespresso Kapseln + Spezialitäten',
-    price: 15,
-    unit: 'pro Aufenthalt',
-    popular: true
-  },
-  {
-    id: 'grocery-service',
-    icon: ShoppingCartIcon,
-    name: 'Grocery Service',
-    description: 'Grundausstattung im Kühlschrank',
-    price: 35,
-    unit: 'einmalig'
-  },
-  {
-    id: 'airport-transfer',
-    icon: TruckIcon,
-    name: 'Airport Transfer',
-    description: 'Abholung Stuttgart Flughafen',
-    price: 85,
-    unit: 'pro Fahrt'
-  },
-  {
-    id: 'fiber-upgrade',
-    icon: WifiIcon,
-    name: 'Gigabit Upgrade',
-    description: '1000 Mbit/s statt 400 Mbit/s',
-    price: 10,
-    unit: 'pro Nacht'
-  },
-  {
-    id: 'extra-guest',
-    icon: UserGroupIcon,
-    name: 'Zusätzlicher Gast',
-    description: 'Luftmatratze + Bettwäsche',
-    price: 20,
-    unit: 'pro Nacht'
-  },
-  {
     id: 'cleaning-service',
     icon: SparklesIcon,
     name: 'Extra Reinigung',
@@ -89,21 +32,12 @@ const additionalServices: AdditionalService[] = [
     unit: 'pro Service'
   },
   {
-    id: 'key-service',
-    icon: KeyIcon,
-    name: '24/7 Key Service',
-    description: 'Persönliche Schlüsselübergabe',
-    price: 15,
-    unit: 'einmalig'
-  },
-  {
-    id: 'welcome-package',
-    icon: GiftIcon,
-    name: 'Welcome Package',
-    description: 'Lokale Spezialitäten + Bad Friedrichshall Guide',
-    price: 25,
-    unit: 'einmalig',
-    popular: true
+    id: 'extra-guest',
+    icon: UserGroupIcon,
+    name: 'Zusätzlicher Gast',
+    description: 'Luftmatratze + Bettwäsche',
+    price: 10,
+    unit: 'pro Nacht'
   }
 ];
 
@@ -122,8 +56,8 @@ export default function AdditionalServices({
         <h4 className="font-semibold text-gray-900 text-sm uppercase tracking-wide">
           🛍️ Zubuchbar
         </h4>
-        <div className="grid grid-cols-2 gap-2">
-          {additionalServices.slice(0, 6).map((service, index) => (
+        <div className="grid grid-cols-1 gap-2">
+          {additionalServices.map((service, index) => (
             <div key={service.id} className="flex items-center space-x-2">
               <service.icon className="h-4 w-4 text-blue-600 flex-shrink-0" />
               <span className="text-xs text-gray-700 truncate">
@@ -132,9 +66,6 @@ export default function AdditionalServices({
             </div>
           ))}
         </div>
-        <p className="text-xs text-gray-500">
-          + 4 weitere Services verfügbar
-        </p>
       </div>
     );
   }
@@ -195,19 +126,6 @@ export default function AdditionalServices({
             </div>
           </div>
         ))}
-      </div>
-
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <div className="flex items-center space-x-2 mb-2">
-          <CameraIcon className="h-5 w-5 text-yellow-600" />
-          <h4 className="font-semibold text-yellow-900">
-            Services bei der Buchung hinzufügen
-          </h4>
-        </div>
-        <p className="text-yellow-800 text-sm">
-          Alle Services können direkt bei der Buchung ausgewählt oder später per E-Mail/WhatsApp nachgebucht werden. 
-          Stripe verarbeitet alle Zahlungen sicher.
-        </p>
       </div>
     </div>
   );

@@ -215,50 +215,7 @@ export default function PricingSection() {
           ))}
         </motion.div>
 
-        {/* Additional Services Section */}
-        <motion.div
-          variants={fadeInUp}
-          initial="initial"
-          whileInView="animate"
-          viewport={{ once: true }}
-          transition={{ delay: 0.3 }}
-        >
-          <AdditionalServices variant="detailed" showPrices={true} />
-        </motion.div>
 
-        {/* Bottom CTA */}
-        <motion.div 
-          className="text-center mt-16"
-          variants={fadeInUp}
-          initial="initial"
-          whileInView="animate"
-          viewport={{ once: true }}
-          transition={{ delay: 0.5 }}
-        >
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 border border-blue-200">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">
-              🤔 Nicht sicher welche Dauer?
-            </h3>
-            <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-              Starten Sie mit einem Kurz-Aufenthalt und verlängern Sie bei Bedarf. 
-              Dank unserer 100% kostenlosen Stornierung haben Sie maximale Flexibilität.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/booking"
-                className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-              >
-                Verfügbarkeit prüfen
-              </Link>
-              <Link
-                href="/contact"
-                className="border-2 border-blue-600 text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-600 hover:text-white transition-colors"
-              >
-                Beratung anfordern
-              </Link>
-            </div>
-          </div>
-        </motion.div>
 
       </div>
     </section>
