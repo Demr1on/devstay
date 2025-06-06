@@ -45,9 +45,37 @@ export default function BookingList({ bookings }: BookingListProps) {
   const [showCancelModal, setShowCancelModal] = useState(false);
 
   const handleCancelBooking = async (bookingId: string) => {
-    // TODO: Neue Stornierungsfunktion implementieren
-    alert('Stornierungsfunktion wird bald implementiert im neuen Admin-System!');
-    console.log('Buchung ID für Stornierung:', bookingId);
+    // Bestätigung ohne Passwort-Abfrage
+    if (!confirm('Buchung wirklich stornieren? Dies kann nicht rückgängig gemacht werden.')) {
+      return;
+    }
+
+    try {
+      console.log('🔥 Storniere Buchung:', bookingId);
+
+      const response = await fetch('/api/admin/cancel-booking', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bookingId,
+          reason: 'Admin-Stornierung über Dashboard',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert(`✅ Buchung erfolgreich storniert!\n\n💰 Rückerstattung: ${result.refundAmount}€\n📋 Grund: ${result.message}`);
+        window.location.reload(); // Dashboard neu laden
+      } else {
+        alert(`❌ Fehler: ${result.error}\n\nDetails: ${result.details || 'Keine weiteren Informationen'}`);
+      }
+    } catch (error) {
+      console.error('❌ Stornierung fehlgeschlagen:', error);
+      alert('❌ Fehler beim Stornieren der Buchung. Prüfe die Konsole für Details.');
+    }
   };
 
   return (
